@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 
 interface Correction {
   original: string;
@@ -54,6 +55,15 @@ const MOCK_CORRECTIONS: Correction[] = [
 const TextEditor: React.FC<TextEditorProps> = ({ setCorrections, setActiveCorrection, setTextStats }) => {
   const [text, setText] = useState<string>("Welcome to WriteWise! Try typing a sentence with some common errors, like 'their are alot of mistakes that effect my writing.' Our grammar checker will help identify and explain issues.");
   const [isChecking, setIsChecking] = useState<boolean>(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    // Auto-resize the textarea when text changes
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'; // Reset height to recalculate
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [text]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
@@ -97,12 +107,13 @@ const TextEditor: React.FC<TextEditorProps> = ({ setCorrections, setActiveCorrec
         
         <TabsContent value="write" className="w-full">
           <div className="relative">
-            <textarea
-              className="text-editor resize-none focus:ring-1 focus:ring-primary transition-all"
+            <Textarea
+              ref={textareaRef}
+              className="text-editor resize-none min-h-[300px] focus:ring-1 focus:ring-primary transition-all"
               value={text}
               onChange={handleTextChange}
               placeholder="Type or paste your text here..."
-              rows={15}
+              style={{ overflow: 'hidden' }} // Hide scrollbars as height increases
               aria-label="Text editor"
             />
             <div className="absolute bottom-4 right-4">
@@ -118,7 +129,7 @@ const TextEditor: React.FC<TextEditorProps> = ({ setCorrections, setActiveCorrec
         </TabsContent>
         
         <TabsContent value="preview" className="w-full">
-          <div className="text-editor overflow-auto">
+          <div className="text-editor overflow-auto min-h-[300px] border border-input rounded-md p-3">
             {text}
           </div>
         </TabsContent>
