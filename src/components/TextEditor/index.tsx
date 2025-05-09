@@ -61,6 +61,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
             isChecking={isChecking}
             textareaRef={textareaRef}
             isLoadingSuggestions={isLoadingSuggestions}
+            wordCount={stats.wordCount} // Pass the word count from stats
           />
         </TabsContent>
         
