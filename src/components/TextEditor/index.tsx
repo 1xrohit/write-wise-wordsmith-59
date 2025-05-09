@@ -4,6 +4,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { sendMessage, createGrammarCheckPrompt } from '@/services/grammarAPI';
 import { calculateTextStats, TextStats, Correction, generateCorrectedText } from './utils/textUtils';
+import { useSuggestions } from '@/hooks/useSuggestions';
 
 // Import tabs
 import WriteTab from './tabs/WriteTab';
@@ -32,6 +33,9 @@ const TextEditor: React.FC<TextEditorProps> = ({ setCorrections, setActiveCorrec
     sentenceCount: 0,
     readabilityScore: 0
   });
+  
+  // Use the suggestions hook
+  const { suggestions, isLoading: isLoadingSuggestions, handleSuggestionClick } = useSuggestions(text);
 
   useEffect(() => {
     // Auto-resize the textarea when text changes
@@ -48,6 +52,16 @@ const TextEditor: React.FC<TextEditorProps> = ({ setCorrections, setActiveCorrec
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
+  };
+
+  const handleSuggestionSelect = (suggestion: string) => {
+    const newText = handleSuggestionClick(suggestion, text);
+    setText(newText);
+    
+    // Focus back on the textarea
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
   };
 
   const insertCorrection = (correction: Correction) => {
@@ -166,6 +180,9 @@ const TextEditor: React.FC<TextEditorProps> = ({ setCorrections, setActiveCorrec
             onCheckGrammar={checkGrammar}
             isChecking={isChecking}
             textareaRef={textareaRef}
+            suggestions={suggestions}
+            onSuggestionClick={handleSuggestionSelect}
+            isLoadingSuggestions={isLoadingSuggestions}
           />
         </TabsContent>
         
@@ -187,15 +204,6 @@ const TextEditor: React.FC<TextEditorProps> = ({ setCorrections, setActiveCorrec
       </Tabs>
       
       <div className="text-sm text-muted-foreground pb-4">
-        <div className="flex justify-between mb-4">
-          <div>
-            Last saved: Just now
-          </div>
-          <div>
-            Press "Check Grammar" to analyze your text
-          </div>
-        </div>
-        
         {/* Text Statistics */}
         <StatsDisplay stats={stats} />
       </div>
