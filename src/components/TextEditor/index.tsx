@@ -10,6 +10,7 @@ import PreviewTab from './tabs/PreviewTab';
 import SuggestionsTab from './tabs/SuggestionsTab';
 import CorrectTab from './tabs/CorrectTab';
 import StatsDisplay from './components/StatsDisplay';
+import SuggestionWords from './components/SuggestionWords';
 
 interface TextEditorProps {
   setCorrections: React.Dispatch<React.SetStateAction<Correction[]>>;
@@ -61,8 +62,6 @@ const TextEditor: React.FC<TextEditorProps> = ({
             onCheckGrammar={checkGrammar}
             isChecking={isChecking}
             textareaRef={textareaRef}
-            suggestions={suggestions}
-            onSuggestionClick={handleSuggestionSelect}
             isLoadingSuggestions={isLoadingSuggestions}
           />
         </TabsContent>
@@ -83,6 +82,13 @@ const TextEditor: React.FC<TextEditorProps> = ({
           />
         </TabsContent>
       </Tabs>
+      
+      {/* Suggestion Words - Moved outside text editor and above stats */}
+      <SuggestionWords 
+        suggestions={suggestions}
+        onSuggestionClick={handleSuggestionSelect}
+        isLoading={isLoadingSuggestions}
+      />
       
       <div className="text-sm text-muted-foreground pb-4">
         {/* Text Statistics */}
