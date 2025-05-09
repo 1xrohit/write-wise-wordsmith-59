@@ -9,8 +9,8 @@ import WriteTab from './tabs/WriteTab';
 import PreviewTab from './tabs/PreviewTab';
 import SuggestionsTab from './tabs/SuggestionsTab';
 import CorrectTab from './tabs/CorrectTab';
-import StatsDisplay from './components/StatsDisplay';
-import SuggestionWords from './components/SuggestionWords';
+import StatsDisplay from './StatsDisplay';
+import SuggestionWords from './SuggestionWords';
 
 interface TextEditorProps {
   setCorrections: React.Dispatch<React.SetStateAction<Correction[]>>;

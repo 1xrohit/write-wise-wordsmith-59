@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { TextStats, getReadabilityLabel } from '../utils/textUtils';
+import { TextStats, getReadabilityLabel } from './utils/textUtils';
 
 interface StatsDisplayProps {
   stats: TextStats;
