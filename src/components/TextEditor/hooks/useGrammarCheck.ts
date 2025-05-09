@@ -56,8 +56,8 @@ export const useGrammarCheck = ({
               // Show the correct tab
               setShowCorrectTab(true);
               
-              // Auto switch to the suggestions tab
-              setActiveTab("suggestions");
+              // Navigate directly to the correct tab instead of suggestions
+              setActiveTab("correct");
               
               toast({
                 title: "Text analyzed",

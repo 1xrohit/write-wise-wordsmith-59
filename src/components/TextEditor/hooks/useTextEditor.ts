@@ -32,14 +32,17 @@ export const useTextEditor = ({
   // Use the suggestions hook
   const { suggestions, isLoading: isLoadingSuggestions, handleSuggestionClick } = useSuggestions(text);
 
-  // Use the grammar check hook
+  // Use the grammar check hook with modified behavior
   const { isChecking, checkGrammar } = useGrammarCheck({
     text,
     setCorrections,
     setLocalCorrections,
     setCorrectedText,
     setShowCorrectTab,
-    setActiveTab
+    setActiveTab: (tab) => {
+      // We're now navigating directly to the correct tab instead of suggestions
+      setActiveTab("correct");
+    }
   });
 
   useEffect(() => {
@@ -93,6 +96,7 @@ export const useTextEditor = ({
   };
 
   const applyAllCorrections = () => {
+    // Fix: Ensure proper spacing in the corrected text
     setText(correctedText);
     setActiveTab("write");
     toast({

@@ -7,7 +7,6 @@ import { useTextEditor } from './hooks/useTextEditor';
 // Import tabs
 import WriteTab from './tabs/WriteTab';
 import PreviewTab from './tabs/PreviewTab';
-import SuggestionsTab from './tabs/SuggestionsTab';
 import CorrectTab from './tabs/CorrectTab';
 import StatsDisplay from './StatsDisplay';
 import SuggestionWords from './SuggestionWords';
@@ -51,7 +50,6 @@ const TextEditor: React.FC<TextEditorProps> = ({
         <TabsList className="mb-2">
           <TabsTrigger value="write">Write</TabsTrigger>
           <TabsTrigger value="preview">Preview</TabsTrigger>
-          <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
           {showCorrectTab && <TabsTrigger value="correct">Correct</TabsTrigger>}
         </TabsList>
         
@@ -68,10 +66,6 @@ const TextEditor: React.FC<TextEditorProps> = ({
         
         <TabsContent value="preview">
           <PreviewTab text={text} />
-        </TabsContent>
-        
-        <TabsContent value="suggestions">
-          <SuggestionsTab corrections={localCorrections} />
         </TabsContent>
 
         <TabsContent value="correct">
