@@ -44,37 +44,53 @@ export interface Correction {
 export const generateCorrectedText = (originalText: string, corrections: Correction[]): string => {
   if (corrections.length === 0) return originalText;
   
-  // Create a copy of the original text
-  let result = originalText;
+  // Instead of modifying the original text piece by piece, let's create
+  // a new text with proper spacing from scratch using character positions
   
-  // Sort corrections from end to beginning to avoid index shifting
-  const sortedCorrections = [...corrections].sort((a, b) => b.startIndex - a.startIndex);
+  // Sort corrections by start index (ascending order)
+  const sortedCorrections = [...corrections].sort((a, b) => a.startIndex - b.startIndex);
   
-  // Apply each correction
-  sortedCorrections.forEach(correction => {
-    // Get text before correction
-    const beforeCorrection = result.substring(0, correction.startIndex);
-    // Get text after correction
-    const afterCorrection = result.substring(correction.endIndex);
+  let result = '';
+  let lastIndex = 0;
+  
+  for (const correction of sortedCorrections) {
+    // Add text between last correction and this one
+    result += originalText.substring(lastIndex, correction.startIndex);
     
-    // Check if spaces are needed before or after the suggestion to prevent word joining
-    const needsSpaceBefore = beforeCorrection.length > 0 && 
-                          !beforeCorrection.endsWith(' ') && 
-                          !correction.suggestion.startsWith(' ');
-                           
-    const needsSpaceAfter = afterCorrection.length > 0 && 
-                        !afterCorrection.startsWith(' ') && 
-                        !correction.suggestion.endsWith(' ');
+    // Add the correction with space consideration
+    const needsSpaceBefore = 
+      result.length > 0 && 
+      !result.endsWith(' ') && 
+      !correction.suggestion.startsWith(' ');
+      
+    if (needsSpaceBefore) {
+      result += ' ';
+    }
     
-    // Apply correction with proper spacing
-    result = beforeCorrection + 
-             (needsSpaceBefore ? ' ' : '') + 
-             correction.suggestion + 
-             (needsSpaceAfter ? ' ' : '') + 
-             afterCorrection;
-  });
+    // Add the suggestion
+    result += correction.suggestion;
+    
+    // Check if we need to add space after
+    const textAfter = originalText.substring(correction.endIndex);
+    const needsSpaceAfter = 
+      textAfter.length > 0 && 
+      !textAfter.startsWith(' ') && 
+      !correction.suggestion.endsWith(' ');
+      
+    if (needsSpaceAfter) {
+      result += ' ';
+    }
+    
+    // Update last index to continue from the end of this correction
+    lastIndex = correction.endIndex;
+  }
   
-  // Clean up any double spaces that might have been introduced
+  // Add any remaining text after the last correction
+  if (lastIndex < originalText.length) {
+    result += originalText.substring(lastIndex);
+  }
+  
+  // Clean up any multiple spaces
   result = result.replace(/\s{2,}/g, ' ');
   
   return result;

@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
-import { TextStats, Correction, calculateTextStats } from '../utils/textUtils';
+import { TextStats, Correction, calculateTextStats, generateCorrectedText } from '../utils/textUtils';
 import { useSuggestions } from '@/hooks/useSuggestions';
 import { useGrammarCheck } from './useGrammarCheck';
 
@@ -40,7 +40,6 @@ export const useTextEditor = ({
     setCorrectedText,
     setShowCorrectTab,
     setActiveTab: (tab) => {
-      // We're now navigating directly to the correct tab instead of suggestions
       setActiveTab("correct");
     }
   });
@@ -80,11 +79,26 @@ export const useTextEditor = ({
     const beforeCorrection = currentText.substring(0, correction.startIndex);
     const afterCorrection = currentText.substring(correction.endIndex);
     
-    // Combine with the suggestion to create the corrected text
-    const newText = beforeCorrection + correction.suggestion + afterCorrection;
+    // Check if spaces are needed
+    const needsSpaceBefore = 
+      beforeCorrection.length > 0 && 
+      !beforeCorrection.endsWith(' ') && 
+      !correction.suggestion.startsWith(' ');
+      
+    const needsSpaceAfter = 
+      afterCorrection.length > 0 && 
+      !afterCorrection.startsWith(' ') && 
+      !correction.suggestion.endsWith(' ');
     
-    // Update the text state
-    setText(newText);
+    // Create the corrected text with proper spacing
+    const newText = beforeCorrection + 
+                   (needsSpaceBefore ? ' ' : '') + 
+                   correction.suggestion + 
+                   (needsSpaceAfter ? ' ' : '') + 
+                   afterCorrection;
+    
+    // Update the text state with the properly spaced text
+    setText(newText.replace(/\s{2,}/g, ' ')); // Clean up any double spaces
     
     // Switch to write tab to show the correction
     setActiveTab("write");
@@ -96,9 +110,15 @@ export const useTextEditor = ({
   };
 
   const applyAllCorrections = () => {
-    // Apply the fully corrected text instead of trying to merge corrections
-    setText(correctedText);
+    // Generate the fully corrected text with proper spacing
+    const fullyCorrectedText = generateCorrectedText(text, localCorrections);
+    
+    // Update the text
+    setText(fullyCorrectedText);
+    
+    // Switch to write tab
     setActiveTab("write");
+    
     toast({
       title: "All corrections applied",
       description: "All suggested corrections have been inserted into your text.",
