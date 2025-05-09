@@ -25,11 +25,8 @@ const WordCounter: React.FC<WordCounterProps> = ({ wordCount, limit }) => {
       </div>
       <Progress 
         value={percentage} 
-        className={`h-1 w-24 ${isMobile ? 'w-16' : 'w-24'} ${
+        className={`h-1 ${isMobile ? 'w-16' : 'w-24'} ${
           isOverLimit ? 'bg-destructive/20' : isNearLimit ? 'bg-amber-100' : ''
-        }`}
-        indicatorClassName={`${
-          isOverLimit ? 'bg-destructive' : isNearLimit ? 'bg-amber-500' : ''
         }`}
       />
     </div>
