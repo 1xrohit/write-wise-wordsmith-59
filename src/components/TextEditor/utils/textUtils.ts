@@ -42,7 +42,9 @@ export interface Correction {
 }
 
 export const generateCorrectedText = (originalText: string, corrections: Correction[]): string => {
-  // Start with the original text
+  if (corrections.length === 0) return originalText;
+  
+  // Create a copy of the original text
   let result = originalText;
   
   // Sort corrections from end to beginning to avoid index shifting
@@ -55,9 +57,25 @@ export const generateCorrectedText = (originalText: string, corrections: Correct
     // Get text after correction
     const afterCorrection = result.substring(correction.endIndex);
     
-    // Replace with the suggested correction without adding extra spaces
-    result = beforeCorrection + correction.suggestion + afterCorrection;
+    // Check if spaces are needed before or after the suggestion to prevent word joining
+    const needsSpaceBefore = beforeCorrection.length > 0 && 
+                          !beforeCorrection.endsWith(' ') && 
+                          !correction.suggestion.startsWith(' ');
+                           
+    const needsSpaceAfter = afterCorrection.length > 0 && 
+                        !afterCorrection.startsWith(' ') && 
+                        !correction.suggestion.endsWith(' ');
+    
+    // Apply correction with proper spacing
+    result = beforeCorrection + 
+             (needsSpaceBefore ? ' ' : '') + 
+             correction.suggestion + 
+             (needsSpaceAfter ? ' ' : '') + 
+             afterCorrection;
   });
+  
+  // Clean up any double spaces that might have been introduced
+  result = result.replace(/\s{2,}/g, ' ');
   
   return result;
 };
