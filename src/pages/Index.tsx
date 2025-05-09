@@ -2,20 +2,12 @@
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import TextEditor from '@/components/TextEditor';
-
-interface Correction {
-  original: string;
-  suggestion: string;
-  type: 'grammar' | 'spelling' | 'punctuation' | 'style';
-  explanation: string;
-  startIndex: number;
-  endIndex: number;
-}
+import { Correction, TextStats } from '@/components/TextEditor/utils/textUtils';
 
 const Index = () => {
   const [corrections, setCorrections] = useState<Correction[]>([]);
   const [activeCorrection, setActiveCorrection] = useState<Correction | null>(null);
-  const [textStats, setTextStats] = useState({
+  const [textStats, setTextStats] = useState<TextStats>({
     wordCount: 0,
     charCount: 0,
     sentenceCount: 0,
