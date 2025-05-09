@@ -96,7 +96,7 @@ export const useTextEditor = ({
   };
 
   const applyAllCorrections = () => {
-    // Fix: Ensure proper spacing in the corrected text
+    // Apply the fully corrected text instead of trying to merge corrections
     setText(correctedText);
     setActiveTab("write");
     toast({

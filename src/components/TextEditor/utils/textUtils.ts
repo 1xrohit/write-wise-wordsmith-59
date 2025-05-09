@@ -55,25 +55,9 @@ export const generateCorrectedText = (originalText: string, corrections: Correct
     // Get text after correction
     const afterCorrection = result.substring(correction.endIndex);
     
-    // Make sure we maintain proper spacing between words
-    const needsSpaceBefore = beforeCorrection.length > 0 && 
-                           !beforeCorrection.endsWith(' ') && 
-                           !correction.suggestion.startsWith(' ');
-                           
-    const needsSpaceAfter = afterCorrection.length > 0 && 
-                          !afterCorrection.startsWith(' ') && 
-                          !correction.suggestion.endsWith(' ');
-    
-    // Apply correction with proper spacing
-    result = beforeCorrection + 
-            (needsSpaceBefore ? ' ' : '') + 
-            correction.suggestion + 
-            (needsSpaceAfter ? ' ' : '') + 
-            afterCorrection;
+    // Replace with the suggested correction without adding extra spaces
+    result = beforeCorrection + correction.suggestion + afterCorrection;
   });
-  
-  // Clean up any double spaces that might have been introduced
-  result = result.replace(/\s{2,}/g, ' ');
   
   return result;
 };
