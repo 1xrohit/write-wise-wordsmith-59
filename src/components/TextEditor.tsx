@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
@@ -6,8 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Loader2 } from 'lucide-react';
+import { Check, X, Loader2, ArrowRight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Toggle } from '@/components/ui/toggle';
 
 interface Correction {
   original: string;
@@ -80,6 +80,8 @@ const TextEditor: React.FC<TextEditorProps> = ({ setCorrections, setActiveCorrec
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [corrections, setLocalCorrections] = useState<Correction[]>([]);
   const [activeTab, setActiveTab] = useState<string>("write");
+  const [showCorrectTab, setShowCorrectTab] = useState<boolean>(false);
+  const [correctedText, setCorrectedText] = useState<string>("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   // Text statistics state
@@ -125,6 +127,47 @@ const TextEditor: React.FC<TextEditorProps> = ({ setCorrections, setActiveCorrec
     setText(e.target.value);
   };
 
+  const insertCorrection = (correction: Correction) => {
+    // Get the current text
+    const currentText = text;
+    
+    // Extract the parts before and after the correction
+    const beforeCorrection = currentText.substring(0, correction.startIndex);
+    const afterCorrection = currentText.substring(correction.endIndex);
+    
+    // Combine with the suggestion to create the corrected text
+    const newText = beforeCorrection + correction.suggestion + afterCorrection;
+    
+    // Update the text state
+    setText(newText);
+    
+    // Switch to write tab to show the correction
+    setActiveTab("write");
+    
+    toast({
+      title: "Correction applied",
+      description: "The suggested correction has been inserted into your text.",
+    });
+  };
+
+  const generateCorrectedText = (corrections: Correction[]) => {
+    // Start with the original text
+    let result = text;
+    
+    // Sort corrections from end to beginning to avoid index shifting
+    const sortedCorrections = [...corrections].sort((a, b) => b.startIndex - a.startIndex);
+    
+    // Apply each correction
+    sortedCorrections.forEach(correction => {
+      result = 
+        result.substring(0, correction.startIndex) + 
+        correction.suggestion + 
+        result.substring(correction.endIndex);
+    });
+    
+    return result;
+  };
+
   const checkGrammar = async () => {
     setIsChecking(true);
     
@@ -161,6 +204,13 @@ const TextEditor: React.FC<TextEditorProps> = ({ setCorrections, setActiveCorrec
               const newCorrections = parsedData.corrections;
               setLocalCorrections(newCorrections);
               setCorrections(newCorrections);
+              
+              // Generate corrected text with all corrections applied
+              const fullyCorrected = generateCorrectedText(newCorrections);
+              setCorrectedText(fullyCorrected);
+              
+              // Show the correct tab
+              setShowCorrectTab(true);
               
               // Auto switch to the suggestions tab
               setActiveTab("suggestions");
@@ -222,6 +272,7 @@ const TextEditor: React.FC<TextEditorProps> = ({ setCorrections, setActiveCorrec
           <TabsTrigger value="write">Write</TabsTrigger>
           <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="suggestions">Suggestions</TabsTrigger>
+          {showCorrectTab && <TabsTrigger value="correct">Correct</TabsTrigger>}
         </TabsList>
         
         <TabsContent value="write" className="w-full">
@@ -295,6 +346,68 @@ const TextEditor: React.FC<TextEditorProps> = ({ setCorrections, setActiveCorrec
                     </CardContent>
                   </Card>
                 ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="correct" className="w-full">
+          <div className="space-y-4 min-h-[300px]">
+            {corrections.length === 0 ? (
+              <div className="flex flex-col h-64 items-center justify-center text-center p-4 border rounded-md border-dashed">
+                <p className="text-muted-foreground mb-2">No corrections available</p>
+                <p className="text-sm text-muted-foreground">Check your text to generate corrections</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {corrections.map((correction, index) => (
+                  <Card key={index} className="transition-all hover:shadow-md">
+                    <CardHeader className="p-3 pb-0">
+                      <div className="flex justify-between items-center">
+                        <Badge className={getTypeBadgeColor(correction.type)}>
+                          {correction.type.charAt(0).toUpperCase() + correction.type.slice(1)}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className="p-3">
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="flex-1">
+                          <div className="line-through text-muted-foreground text-sm">{correction.original}</div>
+                          <div className="font-medium text-sm">{correction.suggestion}</div>
+                          <CardDescription className="mt-2 text-sm">
+                            {correction.explanation}
+                          </CardDescription>
+                        </div>
+                        <Button 
+                          onClick={() => insertCorrection(correction)} 
+                          variant="outline" 
+                          size="sm"
+                          className="flex-shrink-0 whitespace-nowrap"
+                        >
+                          <span>Insert to Write</span>
+                          <ArrowRight className="ml-1 h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                
+                <div className="pt-4 flex justify-end">
+                  <Button 
+                    onClick={() => {
+                      setText(correctedText);
+                      setActiveTab("write");
+                      toast({
+                        title: "All corrections applied",
+                        description: "All suggested corrections have been inserted into your text.",
+                      });
+                    }}
+                    className="ml-auto"
+                  >
+                    Apply All Corrections
+                  </Button>
+                </div>
               </div>
             )}
           </div>
