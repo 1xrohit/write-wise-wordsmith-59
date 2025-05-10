@@ -1,3 +1,4 @@
+
 const API_BASE_URL = 'https://deepak191z-fastapi-chat3.hf.space/v1';
 
 export class ChatError extends Error {
@@ -49,10 +50,10 @@ export async function sendMessage(content: string, replyToContent?: string): Pro
 }
 
 export const createGrammarCheckPrompt = (text: string): string => {
-  return `Please analyze the following text for grammar, spelling, punctuation, and style issues. For each correction, ensure the suggestion preserves proper word spacing. Return the results in a JSON format with an array called "corrections" where each correction has the following structure:
+  return `Please analyze the following text for grammar, spelling, punctuation, and style issues. Return the results in a JSON format with an array called "corrections" where each correction has the following structure:
   {
-    "original": "the incorrect text including any leading/trailing spaces",
-    "suggestion": "the corrected text with proper spacing preserved",
+    "original": "the incorrect text exactly as it appears in the original",
+    "suggestion": "the corrected text",
     "type": "grammar/spelling/punctuation/style",
     "explanation": "why this correction is needed",
     "startIndex": the character position where the error starts in the original text,
@@ -60,10 +61,9 @@ export const createGrammarCheckPrompt = (text: string): string => {
   }
 
   Important:
-  - Preserve all spaces in both original and suggestion fields
-  - Include any leading or trailing spaces that are part of the corrected segment
-  - Ensure suggestions maintain proper word spacing
-  - StartIndex and endIndex should include any relevant spaces
+  - Be precise with startIndex and endIndex values, they must match the exact positions in the original text
+  - Make sure the original and suggestion fields contain the exact text to be replaced
+  - Ensure your response is valid JSON that can be parsed
   
   Here is the text to analyze:
   "${text}"`;

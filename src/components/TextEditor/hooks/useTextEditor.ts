@@ -72,57 +72,65 @@ export const useTextEditor = ({
   };
 
   const insertCorrection = (correction: Correction) => {
-    // Get the current text
-    const currentText = text;
-    
-    // Extract the parts before and after the correction
-    const beforeCorrection = currentText.substring(0, correction.startIndex);
-    const afterCorrection = currentText.substring(correction.endIndex);
-    
-    // Check if spaces are needed
-    const needsSpaceBefore = 
-      beforeCorrection.length > 0 && 
-      !beforeCorrection.endsWith(' ') && 
-      !correction.suggestion.startsWith(' ');
+    try {
+      console.log('Applying single correction:', correction);
       
-    const needsSpaceAfter = 
-      afterCorrection.length > 0 && 
-      !afterCorrection.startsWith(' ') && 
-      !correction.suggestion.endsWith(' ');
-    
-    // Create the corrected text with proper spacing
-    const newText = beforeCorrection + 
-                   (needsSpaceBefore ? ' ' : '') + 
-                   correction.suggestion + 
-                   (needsSpaceAfter ? ' ' : '') + 
-                   afterCorrection;
-    
-    // Update the text state with the properly spaced text
-    setText(newText.replace(/\s{2,}/g, ' ')); // Clean up any double spaces
-    
-    // Switch to write tab to show the correction
-    setActiveTab("write");
-    
-    toast({
-      title: "Correction applied",
-      description: "The suggested correction has been inserted into your text.",
-    });
+      // Calculate positions
+      const start = correction.startIndex;
+      const end = correction.endIndex;
+      
+      // Apply the correction directly
+      const before = text.substring(0, start);
+      const after = text.substring(end);
+      const newText = before + correction.suggestion + after;
+      
+      // Set the new text with corrected content
+      setText(newText);
+      
+      // Switch to write tab to show the correction
+      setActiveTab("write");
+      
+      toast({
+        title: "Correction applied",
+        description: "The suggested correction has been inserted into your text.",
+      });
+    } catch (error) {
+      console.error('Error applying correction:', error);
+      toast({
+        title: "Error applying correction",
+        description: "Failed to apply the correction. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const applyAllCorrections = () => {
-    // Generate the fully corrected text with proper spacing
-    const fullyCorrectedText = generateCorrectedText(text, localCorrections);
-    
-    // Update the text
-    setText(fullyCorrectedText);
-    
-    // Switch to write tab
-    setActiveTab("write");
-    
-    toast({
-      title: "All corrections applied",
-      description: "All suggested corrections have been inserted into your text.",
-    });
+    try {
+      console.log('Applying all corrections:', localCorrections);
+      
+      // Generate corrected text using our utility function
+      const newText = generateCorrectedText(text, localCorrections);
+      console.log('Original text:', text);
+      console.log('New text after corrections:', newText);
+      
+      // Update the text state
+      setText(newText);
+      
+      // Switch to write tab
+      setActiveTab("write");
+      
+      toast({
+        title: "All corrections applied",
+        description: "All suggested corrections have been inserted into your text.",
+      });
+    } catch (error) {
+      console.error('Error applying all corrections:', error);
+      toast({
+        title: "Error applying corrections",
+        description: "Failed to apply all corrections. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return {

@@ -1,3 +1,4 @@
+
 export interface TextStats {
   wordCount: number;
   charCount: number;
@@ -43,30 +44,30 @@ export interface Correction {
 export const generateCorrectedText = (originalText: string, corrections: Correction[]): string => {
   if (corrections.length === 0) return originalText;
   
+  // Create a full copy of the text as an array of characters
+  // This allows us to replace parts of the string without worrying about indexes shifting
+  const textArray = originalText.split('');
+  
   // Sort corrections by start index in descending order
   // This way we can apply corrections from end to start to avoid index shifting
   const sortedCorrections = [...corrections].sort((a, b) => b.startIndex - a.startIndex);
   
-  let result = originalText;
-  
   for (const correction of sortedCorrections) {
-    const before = result.substring(0, correction.startIndex);
-    const after = result.substring(correction.endIndex);
-    
-    // Get the spaces before and after the correction
-    const spacesBefore = before.match(/\s*$/)[0];
-    const spacesAfter = after.match(/^\s*/)[0];
-    
-    // Apply the correction while preserving spacing
-    result = before.slice(0, -spacesBefore.length) + 
-             (spacesBefore.length > 0 ? ' ' : '') +
-             correction.suggestion.trim() +
-             (spacesAfter.length > 0 ? ' ' : '') +
-             after.slice(spacesAfter.length);
+    // Replace the original portion with the suggestion
+    textArray.splice(
+      correction.startIndex, 
+      correction.endIndex - correction.startIndex, 
+      correction.suggestion
+    );
   }
   
+  // Join the array back into a string
+  let result = textArray.join('');
+  
   // Clean up any double spaces that might have been created
-  return result.replace(/\s+/g, ' ').trim();
+  result = result.replace(/\s{2,}/g, ' ');
+  
+  return result;
 };
 
 export const getTypeBadgeColor = (type: string): string => {
