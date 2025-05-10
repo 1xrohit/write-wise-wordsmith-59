@@ -50,7 +50,7 @@ export async function sendMessage(content: string, replyToContent?: string): Pro
 }
 
 export const createGrammarCheckPrompt = (text: string): string => {
-  return `Please analyze the following text for grammar, spelling, punctuation, and style issues. Return the results in ONLY valid JSON format with an array called "corrections" where each correction has the following structure:
+  return `Please analyze the following text for grammar, spelling, punctuation, and style issues. Only identify actual errors - do not suggest changes for correct text or stylistic preferences. Return the results in ONLY valid JSON format with an array called "corrections" where each correction has the following structure:
   {
     "original": "the incorrect text exactly as it appears in the original",
     "suggestion": "the corrected text",
@@ -61,11 +61,14 @@ export const createGrammarCheckPrompt = (text: string): string => {
   }
 
   Important guidelines:
-  - Be precise with startIndex and endIndex values, they must match the exact positions in the original text
-  - Make sure the original and suggestion fields contain the exact text to be replaced
+  - Be extremely precise with startIndex and endIndex values - they must match the exact positions in the original text
+  - Make sure the original field contains the exact error text as it appears, and the suggestion contains only the corrected version of that exact text
+  - The correction should be a direct replacement - same words/phrase but corrected
+  - Do NOT include any surrounding context words in either original or suggestion fields
   - Ensure your response ONLY contains valid JSON without any markdown formatting or additional text
-  - If the original text contains parts of words that need replacing, ensure the replacement maintains proper spacing
-  - Do not change formatting, only correct actual errors
+  - Handle spacing carefully - do not introduce extra spaces or remove necessary spaces
+  - Do not suggest corrections for proper nouns, technical terms, or intentional stylistic choices
+  - Double check all startIndex and endIndex values before returning
   
   Here is the text to analyze:
   "${text}"`;

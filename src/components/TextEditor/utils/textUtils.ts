@@ -1,3 +1,4 @@
+
 export interface TextStats {
   wordCount: number;
   charCount: number;
@@ -43,32 +44,23 @@ export interface Correction {
 export const generateCorrectedText = (originalText: string, corrections: Correction[]): string => {
   if (corrections.length === 0) return originalText;
   
-  // Sort corrections by start index in ascending order
-  const sortedCorrections = [...corrections].sort((a, b) => a.startIndex - b.startIndex);
+  // Sort corrections by start index in descending order to avoid index shifting
+  const sortedCorrections = [...corrections].sort((a, b) => b.startIndex - a.startIndex);
   
-  let result = '';
-  let currentIndex = 0;
+  let result = originalText;
   
-  // Apply each correction in order
+  // Apply each correction starting from the end of the text
   for (const correction of sortedCorrections) {
-    if (correction.startIndex < currentIndex) {
-      console.warn('Overlapping corrections detected, skipping:', correction);
+    if (correction.startIndex < 0 || correction.endIndex > result.length || correction.endIndex <= correction.startIndex) {
+      console.warn('Invalid correction range, skipping:', correction);
       continue;
     }
     
-    // Add text before the correction
-    result += originalText.substring(currentIndex, correction.startIndex);
-    
-    // Add the suggested correction
-    result += correction.suggestion;
-    
-    // Update currentIndex to after the correction
-    currentIndex = correction.endIndex;
-  }
-  
-  // Add any remaining text after the last correction
-  if (currentIndex < originalText.length) {
-    result += originalText.substring(currentIndex);
+    // Replace the original text segment with the correction
+    result = 
+      result.substring(0, correction.startIndex) + 
+      correction.suggestion + 
+      result.substring(correction.endIndex);
   }
   
   return result;

@@ -75,7 +75,22 @@ export const useTextEditor = ({
     try {
       console.log('Applying single correction:', correction);
       
-      // Use generateCorrectedText with just this one correction
+      // First check if the correction is valid for the current text
+      if (text.substring(correction.startIndex, correction.endIndex) !== correction.original) {
+        console.warn('Original text does not match correction:', {
+          expected: correction.original,
+          actual: text.substring(correction.startIndex, correction.endIndex)
+        });
+        
+        toast({
+          title: "Cannot apply correction",
+          description: "The text has changed since the correction was generated.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Apply the single correction
       const newText = generateCorrectedText(text, [correction]);
       
       // Set the new text with corrected content
@@ -110,8 +125,26 @@ export const useTextEditor = ({
         return;
       }
       
+      // Validate all corrections before applying
+      const validCorrections = localCorrections.filter(correction => 
+        text.substring(correction.startIndex, correction.endIndex) === correction.original
+      );
+      
+      if (validCorrections.length !== localCorrections.length) {
+        console.warn('Some corrections cannot be applied because the text has changed');
+      }
+      
+      if (validCorrections.length === 0) {
+        toast({
+          title: "Cannot apply corrections",
+          description: "The text has changed too much since the corrections were generated.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Generate corrected text using our utility function
-      const newText = generateCorrectedText(text, localCorrections);
+      const newText = generateCorrectedText(text, validCorrections);
       console.log('Original text:', text);
       console.log('New text after corrections:', newText);
       

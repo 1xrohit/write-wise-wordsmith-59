@@ -54,6 +54,22 @@ export const useGrammarCheck = ({
     throw new Error('No JSON found in response');
   };
 
+  // Validate correction data before applying
+  const validateCorrection = (correction: any): boolean => {
+    return (
+      typeof correction.original === 'string' &&
+      typeof correction.suggestion === 'string' &&
+      typeof correction.type === 'string' &&
+      typeof correction.explanation === 'string' &&
+      typeof correction.startIndex === 'number' &&
+      typeof correction.endIndex === 'number' &&
+      correction.startIndex >= 0 &&
+      correction.endIndex > correction.startIndex &&
+      // Ensure the original text at the position matches what we expect
+      text.substring(correction.startIndex, correction.endIndex) === correction.original
+    );
+  };
+
   const checkGrammar = async () => {
     setIsChecking(true);
     
@@ -79,16 +95,13 @@ export const useGrammarCheck = ({
             const newCorrections = parsedData.corrections;
             console.log('Extracted corrections:', newCorrections);
             
-            // Validate correction data
+            // Validate each correction
             const validatedCorrections = newCorrections.filter(correction => {
-              return (
-                typeof correction.original === 'string' &&
-                typeof correction.suggestion === 'string' &&
-                typeof correction.startIndex === 'number' &&
-                typeof correction.endIndex === 'number' &&
-                correction.startIndex >= 0 &&
-                correction.endIndex > correction.startIndex
-              );
+              const isValid = validateCorrection(correction);
+              if (!isValid) {
+                console.warn('Invalid correction:', correction);
+              }
+              return isValid;
             });
             
             if (validatedCorrections.length === 0) {
