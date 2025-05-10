@@ -1,4 +1,3 @@
-
 export interface TextStats {
   wordCount: number;
   charCount: number;
@@ -44,28 +43,33 @@ export interface Correction {
 export const generateCorrectedText = (originalText: string, corrections: Correction[]): string => {
   if (corrections.length === 0) return originalText;
   
-  // Create a full copy of the text as an array of characters
-  // This allows us to replace parts of the string without worrying about indexes shifting
-  const textArray = originalText.split('');
+  // Sort corrections by start index in ascending order
+  const sortedCorrections = [...corrections].sort((a, b) => a.startIndex - b.startIndex);
   
-  // Sort corrections by start index in descending order
-  // This way we can apply corrections from end to start to avoid index shifting
-  const sortedCorrections = [...corrections].sort((a, b) => b.startIndex - a.startIndex);
+  let result = '';
+  let currentIndex = 0;
   
+  // Apply each correction in order
   for (const correction of sortedCorrections) {
-    // Replace the original portion with the suggestion
-    textArray.splice(
-      correction.startIndex, 
-      correction.endIndex - correction.startIndex, 
-      correction.suggestion
-    );
+    if (correction.startIndex < currentIndex) {
+      console.warn('Overlapping corrections detected, skipping:', correction);
+      continue;
+    }
+    
+    // Add text before the correction
+    result += originalText.substring(currentIndex, correction.startIndex);
+    
+    // Add the suggested correction
+    result += correction.suggestion;
+    
+    // Update currentIndex to after the correction
+    currentIndex = correction.endIndex;
   }
   
-  // Join the array back into a string
-  let result = textArray.join('');
-  
-  // Clean up any double spaces that might have been created
-  result = result.replace(/\s{2,}/g, ' ');
+  // Add any remaining text after the last correction
+  if (currentIndex < originalText.length) {
+    result += originalText.substring(currentIndex);
+  }
   
   return result;
 };

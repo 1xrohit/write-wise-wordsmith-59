@@ -50,7 +50,7 @@ export async function sendMessage(content: string, replyToContent?: string): Pro
 }
 
 export const createGrammarCheckPrompt = (text: string): string => {
-  return `Please analyze the following text for grammar, spelling, punctuation, and style issues. Return the results in a JSON format with an array called "corrections" where each correction has the following structure:
+  return `Please analyze the following text for grammar, spelling, punctuation, and style issues. Return the results in ONLY valid JSON format with an array called "corrections" where each correction has the following structure:
   {
     "original": "the incorrect text exactly as it appears in the original",
     "suggestion": "the corrected text",
@@ -60,10 +60,12 @@ export const createGrammarCheckPrompt = (text: string): string => {
     "endIndex": the character position where the error ends in the original text
   }
 
-  Important:
+  Important guidelines:
   - Be precise with startIndex and endIndex values, they must match the exact positions in the original text
   - Make sure the original and suggestion fields contain the exact text to be replaced
-  - Ensure your response is valid JSON that can be parsed
+  - Ensure your response ONLY contains valid JSON without any markdown formatting or additional text
+  - If the original text contains parts of words that need replacing, ensure the replacement maintains proper spacing
+  - Do not change formatting, only correct actual errors
   
   Here is the text to analyze:
   "${text}"`;

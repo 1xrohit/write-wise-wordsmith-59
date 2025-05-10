@@ -23,6 +23,37 @@ export const useGrammarCheck = ({
 }: UseGrammarCheckProps) => {
   const [isChecking, setIsChecking] = useState<boolean>(false);
 
+  const extractJSON = (content: string): any => {
+    // Try direct parsing first
+    try {
+      return JSON.parse(content);
+    } catch (e) {
+      console.log("Direct parsing failed, trying to extract JSON", e);
+    }
+    
+    // If direct parsing fails, try to extract JSON from markdown
+    try {
+      // Remove markdown code blocks
+      if (content.includes('```')) {
+        const jsonMatch = content.match(/```(?:json)?([\s\S]*?)```/);
+        if (jsonMatch && jsonMatch[1]) {
+          return JSON.parse(jsonMatch[1].trim());
+        }
+      }
+      
+      // Try to find JSON object pattern
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.error("JSON extraction failed", e);
+      throw new Error('Could not extract valid JSON from response');
+    }
+    
+    throw new Error('No JSON found in response');
+  };
+
   const checkGrammar = async () => {
     setIsChecking(true);
     
@@ -39,42 +70,41 @@ export const useGrammarCheck = ({
         const content = data.choices[0].message.content;
         console.log('API Content:', content);
         
-        // Try to extract JSON from the response
+        // Extract JSON from the response
         try {
-          // Look for JSON object in the response - more robust pattern
-          let jsonStr = content;
-          
-          // Remove any markdown code blocks if present
-          if (content.includes('```json')) {
-            jsonStr = content.replace(/```json|```/g, '').trim();
-          }
-          
-          // If there are multiple JSON objects, find the one with corrections
-          let parsedData;
-          try {
-            parsedData = JSON.parse(jsonStr);
-          } catch (e) {
-            // If direct parsing fails, try to extract using regex
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              jsonStr = jsonMatch[0];
-              parsedData = JSON.parse(jsonStr);
-            } else {
-              throw new Error('Could not extract valid JSON from response');
-            }
-          }
-          
+          const parsedData = extractJSON(content);
           console.log('Parsed data:', parsedData);
           
           if (parsedData?.corrections && Array.isArray(parsedData.corrections)) {
             const newCorrections = parsedData.corrections;
             console.log('Extracted corrections:', newCorrections);
             
-            setLocalCorrections(newCorrections);
-            setCorrections(newCorrections);
+            // Validate correction data
+            const validatedCorrections = newCorrections.filter(correction => {
+              return (
+                typeof correction.original === 'string' &&
+                typeof correction.suggestion === 'string' &&
+                typeof correction.startIndex === 'number' &&
+                typeof correction.endIndex === 'number' &&
+                correction.startIndex >= 0 &&
+                correction.endIndex > correction.startIndex
+              );
+            });
+            
+            if (validatedCorrections.length === 0) {
+              toast({
+                title: "No issues found",
+                description: "Your text looks good! No corrections needed.",
+              });
+              setIsChecking(false);
+              return;
+            }
+            
+            setLocalCorrections(validatedCorrections);
+            setCorrections(validatedCorrections);
             
             // Generate corrected text with all corrections applied
-            const fullyCorrected = generateCorrectedText(text, newCorrections);
+            const fullyCorrected = generateCorrectedText(text, validatedCorrections);
             console.log('Generated corrected text:', fullyCorrected);
             
             setCorrectedText(fullyCorrected);
@@ -87,11 +117,14 @@ export const useGrammarCheck = ({
             
             toast({
               title: "Text analyzed",
-              description: `Found ${newCorrections.length} potential improvements`,
+              description: `Found ${validatedCorrections.length} potential improvements`,
             });
           } else {
             console.error('No corrections array in response', parsedData);
-            throw new Error('No corrections array in response');
+            toast({
+              title: "No issues found",
+              description: "Your text looks good! No corrections needed.",
+            });
           }
         } catch (jsonError) {
           console.error('Failed to parse corrections:', jsonError, content);

@@ -75,14 +75,8 @@ export const useTextEditor = ({
     try {
       console.log('Applying single correction:', correction);
       
-      // Calculate positions
-      const start = correction.startIndex;
-      const end = correction.endIndex;
-      
-      // Apply the correction directly
-      const before = text.substring(0, start);
-      const after = text.substring(end);
-      const newText = before + correction.suggestion + after;
+      // Use generateCorrectedText with just this one correction
+      const newText = generateCorrectedText(text, [correction]);
       
       // Set the new text with corrected content
       setText(newText);
@@ -108,6 +102,14 @@ export const useTextEditor = ({
     try {
       console.log('Applying all corrections:', localCorrections);
       
+      if (localCorrections.length === 0) {
+        toast({
+          title: "No corrections to apply",
+          description: "There are no corrections to apply to your text.",
+        });
+        return;
+      }
+      
       // Generate corrected text using our utility function
       const newText = generateCorrectedText(text, localCorrections);
       console.log('Original text:', text);
@@ -115,6 +117,10 @@ export const useTextEditor = ({
       
       // Update the text state
       setText(newText);
+      
+      // Clear the corrections since they've been applied
+      setLocalCorrections([]);
+      setCorrections([]);
       
       // Switch to write tab
       setActiveTab("write");
