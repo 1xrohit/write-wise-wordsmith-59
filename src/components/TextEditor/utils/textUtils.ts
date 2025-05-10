@@ -1,4 +1,3 @@
-
 export interface TextStats {
   wordCount: number;
   charCount: number;
@@ -44,56 +43,30 @@ export interface Correction {
 export const generateCorrectedText = (originalText: string, corrections: Correction[]): string => {
   if (corrections.length === 0) return originalText;
   
-  // Instead of modifying the original text piece by piece, let's create
-  // a new text with proper spacing from scratch using character positions
+  // Sort corrections by start index in descending order
+  // This way we can apply corrections from end to start to avoid index shifting
+  const sortedCorrections = [...corrections].sort((a, b) => b.startIndex - a.startIndex);
   
-  // Sort corrections by start index (ascending order)
-  const sortedCorrections = [...corrections].sort((a, b) => a.startIndex - b.startIndex);
-  
-  let result = '';
-  let lastIndex = 0;
+  let result = originalText;
   
   for (const correction of sortedCorrections) {
-    // Add text between last correction and this one
-    result += originalText.substring(lastIndex, correction.startIndex);
+    const before = result.substring(0, correction.startIndex);
+    const after = result.substring(correction.endIndex);
     
-    // Add the correction with space consideration
-    const needsSpaceBefore = 
-      result.length > 0 && 
-      !result.endsWith(' ') && 
-      !correction.suggestion.startsWith(' ');
-      
-    if (needsSpaceBefore) {
-      result += ' ';
-    }
+    // Get the spaces before and after the correction
+    const spacesBefore = before.match(/\s*$/)[0];
+    const spacesAfter = after.match(/^\s*/)[0];
     
-    // Add the suggestion
-    result += correction.suggestion;
-    
-    // Check if we need to add space after
-    const textAfter = originalText.substring(correction.endIndex);
-    const needsSpaceAfter = 
-      textAfter.length > 0 && 
-      !textAfter.startsWith(' ') && 
-      !correction.suggestion.endsWith(' ');
-      
-    if (needsSpaceAfter) {
-      result += ' ';
-    }
-    
-    // Update last index to continue from the end of this correction
-    lastIndex = correction.endIndex;
+    // Apply the correction while preserving spacing
+    result = before.slice(0, -spacesBefore.length) + 
+             (spacesBefore.length > 0 ? ' ' : '') +
+             correction.suggestion.trim() +
+             (spacesAfter.length > 0 ? ' ' : '') +
+             after.slice(spacesAfter.length);
   }
   
-  // Add any remaining text after the last correction
-  if (lastIndex < originalText.length) {
-    result += originalText.substring(lastIndex);
-  }
-  
-  // Clean up any multiple spaces
-  result = result.replace(/\s{2,}/g, ' ');
-  
-  return result;
+  // Clean up any double spaces that might have been created
+  return result.replace(/\s+/g, ' ').trim();
 };
 
 export const getTypeBadgeColor = (type: string): string => {
