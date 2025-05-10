@@ -23,6 +23,7 @@ export const useGrammarCheck = ({
 }: UseGrammarCheckProps) => {
   const [isChecking, setIsChecking] = useState<boolean>(false);
 
+  // Improved JSON extraction function
   const extractJSON = (content: string): any => {
     // Try direct parsing first
     try {
@@ -54,20 +55,37 @@ export const useGrammarCheck = ({
     throw new Error('No JSON found in response');
   };
 
-  // Validate correction data before applying
-  const validateCorrection = (correction: any): boolean => {
-    return (
-      typeof correction.original === 'string' &&
-      typeof correction.suggestion === 'string' &&
-      typeof correction.type === 'string' &&
-      typeof correction.explanation === 'string' &&
-      typeof correction.startIndex === 'number' &&
-      typeof correction.endIndex === 'number' &&
-      correction.startIndex >= 0 &&
-      correction.endIndex > correction.startIndex &&
-      // Ensure the original text at the position matches what we expect
-      text.substring(correction.startIndex, correction.endIndex) === correction.original
-    );
+  // Enhanced validation with explicit original text matching
+  const validateCorrection = (correction: any, originalText: string): boolean => {
+    // Basic type checks
+    if (
+      typeof correction.original !== 'string' ||
+      typeof correction.suggestion !== 'string' ||
+      typeof correction.type !== 'string' ||
+      typeof correction.explanation !== 'string' ||
+      typeof correction.startIndex !== 'number' ||
+      typeof correction.endIndex !== 'number' ||
+      correction.startIndex < 0 ||
+      correction.endIndex > originalText.length ||
+      correction.endIndex <= correction.startIndex
+    ) {
+      console.warn('Invalid correction structure:', correction);
+      return false;
+    }
+    
+    // Check if the original text at the position matches what we expect
+    const actualText = originalText.substring(correction.startIndex, correction.endIndex);
+    if (actualText !== correction.original) {
+      console.warn('Original text mismatch:', {
+        expected: correction.original,
+        actual: actualText,
+        startIndex: correction.startIndex,
+        endIndex: correction.endIndex
+      });
+      return false;
+    }
+    
+    return true;
   };
 
   const checkGrammar = async () => {
@@ -95,14 +113,10 @@ export const useGrammarCheck = ({
             const newCorrections = parsedData.corrections;
             console.log('Extracted corrections:', newCorrections);
             
-            // Validate each correction
-            const validatedCorrections = newCorrections.filter(correction => {
-              const isValid = validateCorrection(correction);
-              if (!isValid) {
-                console.warn('Invalid correction:', correction);
-              }
-              return isValid;
-            });
+            // Validate each correction with the current text
+            const validatedCorrections = newCorrections.filter(correction => 
+              validateCorrection(correction, text)
+            );
             
             if (validatedCorrections.length === 0) {
               toast({

@@ -39,9 +39,7 @@ export const useTextEditor = ({
     setLocalCorrections,
     setCorrectedText,
     setShowCorrectTab,
-    setActiveTab: (tab) => {
-      setActiveTab("correct");
-    }
+    setActiveTab
   });
 
   useEffect(() => {
@@ -71,15 +69,18 @@ export const useTextEditor = ({
     }
   };
 
+  // Improved function to insert a single correction
   const insertCorrection = (correction: Correction) => {
     try {
       console.log('Applying single correction:', correction);
       
-      // First check if the correction is valid for the current text
+      // Verify the correction is valid for the current text
       if (text.substring(correction.startIndex, correction.endIndex) !== correction.original) {
         console.warn('Original text does not match correction:', {
           expected: correction.original,
-          actual: text.substring(correction.startIndex, correction.endIndex)
+          actual: text.substring(correction.startIndex, correction.endIndex),
+          start: correction.startIndex,
+          end: correction.endIndex
         });
         
         toast({
@@ -90,7 +91,7 @@ export const useTextEditor = ({
         return;
       }
       
-      // Apply the single correction
+      // Apply the single correction using our utility function
       const newText = generateCorrectedText(text, [correction]);
       
       // Set the new text with corrected content
@@ -113,6 +114,7 @@ export const useTextEditor = ({
     }
   };
 
+  // Enhanced function to apply all corrections
   const applyAllCorrections = () => {
     try {
       console.log('Applying all corrections:', localCorrections);
@@ -125,14 +127,21 @@ export const useTextEditor = ({
         return;
       }
       
-      // Validate all corrections before applying
-      const validCorrections = localCorrections.filter(correction => 
-        text.substring(correction.startIndex, correction.endIndex) === correction.original
-      );
-      
-      if (validCorrections.length !== localCorrections.length) {
-        console.warn('Some corrections cannot be applied because the text has changed');
-      }
+      // Validate each correction against the current text
+      const validCorrections = localCorrections.filter(correction => {
+        const actual = text.substring(correction.startIndex, correction.endIndex);
+        const isValid = actual === correction.original;
+        
+        if (!isValid) {
+          console.warn('Correction no longer matches text:', {
+            correction,
+            expected: correction.original,
+            actual
+          });
+        }
+        
+        return isValid;
+      });
       
       if (validCorrections.length === 0) {
         toast({
@@ -143,24 +152,26 @@ export const useTextEditor = ({
         return;
       }
       
+      console.log('Valid corrections to apply:', validCorrections);
+      console.log('Original text:', text);
+      
       // Generate corrected text using our utility function
       const newText = generateCorrectedText(text, validCorrections);
-      console.log('Original text:', text);
       console.log('New text after corrections:', newText);
       
-      // Update the text state
+      // Update the text state with the corrected text
       setText(newText);
       
       // Clear the corrections since they've been applied
       setLocalCorrections([]);
       setCorrections([]);
       
-      // Switch to write tab
+      // Switch to write tab to show the corrections
       setActiveTab("write");
       
       toast({
         title: "All corrections applied",
-        description: "All suggested corrections have been inserted into your text.",
+        description: `Applied ${validCorrections.length} corrections to your text.`,
       });
     } catch (error) {
       console.error('Error applying all corrections:', error);

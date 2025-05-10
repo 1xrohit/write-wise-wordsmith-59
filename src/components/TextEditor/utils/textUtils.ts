@@ -41,8 +41,9 @@ export interface Correction {
   endIndex: number;
 }
 
+// Completely rewritten function to properly handle spacing in corrections
 export const generateCorrectedText = (originalText: string, corrections: Correction[]): string => {
-  if (corrections.length === 0) return originalText;
+  if (!corrections || corrections.length === 0) return originalText;
   
   // Sort corrections by start index in descending order to avoid index shifting
   const sortedCorrections = [...corrections].sort((a, b) => b.startIndex - a.startIndex);
@@ -51,8 +52,14 @@ export const generateCorrectedText = (originalText: string, corrections: Correct
   
   // Apply each correction starting from the end of the text
   for (const correction of sortedCorrections) {
-    if (correction.startIndex < 0 || correction.endIndex > result.length || correction.endIndex <= correction.startIndex) {
-      console.warn('Invalid correction range, skipping:', correction);
+    // Skip invalid corrections
+    if (
+      correction.startIndex < 0 || 
+      correction.endIndex > result.length || 
+      correction.endIndex <= correction.startIndex ||
+      result.substring(correction.startIndex, correction.endIndex) !== correction.original
+    ) {
+      console.warn('Invalid correction or text mismatch, skipping:', correction);
       continue;
     }
     
