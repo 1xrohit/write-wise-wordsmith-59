@@ -1,4 +1,3 @@
-
 export interface TextStats {
   wordCount: number;
   charCount: number;
@@ -33,44 +32,23 @@ export const getReadabilityLabel = (score: number): string => {
 };
 
 export interface Correction {
-  original: string;
+  error: string;
   suggestion: string;
-  type: 'grammar' | 'spelling' | 'punctuation' | 'style';
-  explanation: string;
-  startIndex: number;
-  endIndex: number;
+  reason: string;
+  type?: 'grammar' | 'spelling' | 'punctuation' | 'style';
 }
 
-// Completely rewritten function to properly handle spacing in corrections
-export const generateCorrectedText = (originalText: string, corrections: Correction[]): string => {
-  if (!corrections || corrections.length === 0) return originalText;
-  
-  // Sort corrections by start index in descending order to avoid index shifting
-  const sortedCorrections = [...corrections].sort((a, b) => b.startIndex - a.startIndex);
-  
-  let result = originalText;
-  
-  // Apply each correction starting from the end of the text
-  for (const correction of sortedCorrections) {
-    // Skip invalid corrections
-    if (
-      correction.startIndex < 0 || 
-      correction.endIndex > result.length || 
-      correction.endIndex <= correction.startIndex ||
-      result.substring(correction.startIndex, correction.endIndex) !== correction.original
-    ) {
-      console.warn('Invalid correction or text mismatch, skipping:', correction);
-      continue;
-    }
-    
-    // Replace the original text segment with the correction
-    result = 
-      result.substring(0, correction.startIndex) + 
-      correction.suggestion + 
-      result.substring(correction.endIndex);
-  }
-  
-  return result;
+export interface GrammarResponse {
+  original: string;
+  mistakes: Correction[];
+  corrected: string;
+}
+
+// We'll use the full corrected text from the API response instead of 
+// calculating it ourselves, as it's more reliable
+export const generateCorrectedText = (response: GrammarResponse): string => {
+  // Return the fully corrected text from the API response
+  return response.corrected || response.original;
 };
 
 export const getTypeBadgeColor = (type: string): string => {

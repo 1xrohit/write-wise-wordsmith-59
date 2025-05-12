@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
-import { TextStats, Correction, calculateTextStats, generateCorrectedText } from '../utils/textUtils';
+import { TextStats, Correction, calculateTextStats } from '../utils/textUtils';
 import { useSuggestions } from '@/hooks/useSuggestions';
 import { useGrammarCheck } from './useGrammarCheck';
 
@@ -69,30 +69,34 @@ export const useTextEditor = ({
     }
   };
 
-  // Improved function to insert a single correction
+  // Function to insert a single correction
   const insertCorrection = (correction: Correction) => {
     try {
       console.log('Applying single correction:', correction);
       
-      // Verify the correction is valid for the current text
-      if (text.substring(correction.startIndex, correction.endIndex) !== correction.original) {
-        console.warn('Original text does not match correction:', {
-          expected: correction.original,
-          actual: text.substring(correction.startIndex, correction.endIndex),
-          start: correction.startIndex,
-          end: correction.endIndex
-        });
-        
+      // For a single correction, we manually make the change
+      // since we don't have position information in the new format
+      if (!correction.error || !correction.suggestion) {
         toast({
-          title: "Cannot apply correction",
-          description: "The text has changed since the correction was generated.",
+          title: "Invalid correction",
+          description: "The correction does not contain valid data.",
           variant: "destructive"
         });
         return;
       }
       
-      // Apply the single correction using our utility function
-      const newText = generateCorrectedText(text, [correction]);
+      // Simple replacement of the error with the suggestion
+      const newText = text.replace(correction.error, correction.suggestion);
+      
+      // If the text didn't change, show an error
+      if (newText === text) {
+        toast({
+          title: "Cannot apply correction",
+          description: "Could not find the text to correct in the current document.",
+          variant: "destructive"
+        });
+        return;
+      }
       
       // Set the new text with corrected content
       setText(newText);
@@ -114,53 +118,22 @@ export const useTextEditor = ({
     }
   };
 
-  // Enhanced function to apply all corrections
+  // Function to apply all corrections at once
   const applyAllCorrections = () => {
     try {
-      console.log('Applying all corrections:', localCorrections);
+      console.log('Applying all corrections');
       
-      if (localCorrections.length === 0) {
+      if (!correctedText) {
         toast({
-          title: "No corrections to apply",
-          description: "There are no corrections to apply to your text.",
-        });
-        return;
-      }
-      
-      // Validate each correction against the current text
-      const validCorrections = localCorrections.filter(correction => {
-        const actual = text.substring(correction.startIndex, correction.endIndex);
-        const isValid = actual === correction.original;
-        
-        if (!isValid) {
-          console.warn('Correction no longer matches text:', {
-            correction,
-            expected: correction.original,
-            actual
-          });
-        }
-        
-        return isValid;
-      });
-      
-      if (validCorrections.length === 0) {
-        toast({
-          title: "Cannot apply corrections",
-          description: "The text has changed too much since the corrections were generated.",
+          title: "No corrected text",
+          description: "There is no corrected text to apply.",
           variant: "destructive"
         });
         return;
       }
       
-      console.log('Valid corrections to apply:', validCorrections);
-      console.log('Original text:', text);
-      
-      // Generate corrected text using our utility function
-      const newText = generateCorrectedText(text, validCorrections);
-      console.log('New text after corrections:', newText);
-      
-      // Update the text state with the corrected text
-      setText(newText);
+      // Set the fully corrected text from the API response
+      setText(correctedText);
       
       // Clear the corrections since they've been applied
       setLocalCorrections([]);
@@ -171,7 +144,7 @@ export const useTextEditor = ({
       
       toast({
         title: "All corrections applied",
-        description: `Applied ${validCorrections.length} corrections to your text.`,
+        description: "All corrections have been applied to your text.",
       });
     } catch (error) {
       console.error('Error applying all corrections:', error);

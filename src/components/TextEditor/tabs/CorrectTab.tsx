@@ -45,8 +45,8 @@ const CorrectTab: React.FC<CorrectTabProps> = ({
         <Card key={index} className="transition-all hover:shadow-md">
           <CardHeader className="p-3 pb-0">
             <div className="flex justify-between items-center">
-              <Badge className={getTypeBadgeColor(correction.type)}>
-                {correction.type.charAt(0).toUpperCase() + correction.type.slice(1)}
+              <Badge className={getTypeBadgeColor(correction.type || 'grammar')}>
+                {(correction.type || 'Grammar').charAt(0).toUpperCase() + (correction.type || 'grammar').slice(1)}
               </Badge>
               
               {/* Insert button on the right side */}
@@ -64,10 +64,10 @@ const CorrectTab: React.FC<CorrectTabProps> = ({
           
           <CardContent className="p-3">
             <div className="flex-1">
-              <div className="line-through text-muted-foreground text-sm">{correction.original}</div>
+              <div className="line-through text-muted-foreground text-sm">{correction.error}</div>
               <div className="font-medium text-sm">{correction.suggestion}</div>
               <CardDescription className="mt-2 text-xs sm:text-sm">
-                {correction.explanation}
+                {correction.reason}
               </CardDescription>
             </div>
           </CardContent>

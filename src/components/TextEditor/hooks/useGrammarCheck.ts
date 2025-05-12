@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { sendMessage, createGrammarCheckPrompt } from '@/services/grammarAPI';
-import { Correction, generateCorrectedText } from '../utils/textUtils';
+import { Correction, GrammarResponse, generateCorrectedText } from '../utils/textUtils';
 
 interface UseGrammarCheckProps {
   text: string;
@@ -55,37 +55,14 @@ export const useGrammarCheck = ({
     throw new Error('No JSON found in response');
   };
 
-  // Enhanced validation with explicit original text matching
-  const validateCorrection = (correction: any, originalText: string): boolean => {
-    // Basic type checks
-    if (
-      typeof correction.original !== 'string' ||
-      typeof correction.suggestion !== 'string' ||
-      typeof correction.type !== 'string' ||
-      typeof correction.explanation !== 'string' ||
-      typeof correction.startIndex !== 'number' ||
-      typeof correction.endIndex !== 'number' ||
-      correction.startIndex < 0 ||
-      correction.endIndex > originalText.length ||
-      correction.endIndex <= correction.startIndex
-    ) {
-      console.warn('Invalid correction structure:', correction);
-      return false;
-    }
-    
-    // Check if the original text at the position matches what we expect
-    const actualText = originalText.substring(correction.startIndex, correction.endIndex);
-    if (actualText !== correction.original) {
-      console.warn('Original text mismatch:', {
-        expected: correction.original,
-        actual: actualText,
-        startIndex: correction.startIndex,
-        endIndex: correction.endIndex
-      });
-      return false;
-    }
-    
-    return true;
+  const validateResponse = (data: any): boolean => {
+    // Validate that we have the required fields
+    return (
+      data &&
+      typeof data.original === 'string' &&
+      Array.isArray(data.mistakes) &&
+      typeof data.corrected === 'string'
+    );
   };
 
   const checkGrammar = async () => {
@@ -109,16 +86,29 @@ export const useGrammarCheck = ({
           const parsedData = extractJSON(content);
           console.log('Parsed data:', parsedData);
           
-          if (parsedData?.corrections && Array.isArray(parsedData.corrections)) {
-            const newCorrections = parsedData.corrections;
-            console.log('Extracted corrections:', newCorrections);
+          if (validateResponse(parsedData)) {
+            const response = parsedData as GrammarResponse;
             
-            // Validate each correction with the current text
-            const validatedCorrections = newCorrections.filter(correction => 
-              validateCorrection(correction, text)
-            );
+            // Assign types to each correction
+            const typedCorrections = response.mistakes.map(mistake => {
+              // Determine type based on common keywords in the reason
+              let type: 'grammar' | 'spelling' | 'punctuation' | 'style' = 'grammar';
+              const reasonLower = mistake.reason.toLowerCase();
+              
+              if (reasonLower.includes('spell') || reasonLower.includes('typo')) {
+                type = 'spelling';
+              } else if (reasonLower.includes('punctuation') || reasonLower.includes('comma') || 
+                        reasonLower.includes('period') || reasonLower.includes('apostrophe')) {
+                type = 'punctuation';
+              } else if (reasonLower.includes('style') || reasonLower.includes('clarity') || 
+                        reasonLower.includes('concise')) {
+                type = 'style';
+              }
+              
+              return { ...mistake, type };
+            });
             
-            if (validatedCorrections.length === 0) {
+            if (typedCorrections.length === 0) {
               toast({
                 title: "No issues found",
                 description: "Your text looks good! No corrections needed.",
@@ -127,14 +117,11 @@ export const useGrammarCheck = ({
               return;
             }
             
-            setLocalCorrections(validatedCorrections);
-            setCorrections(validatedCorrections);
+            setLocalCorrections(typedCorrections);
+            setCorrections(typedCorrections);
             
-            // Generate corrected text with all corrections applied
-            const fullyCorrected = generateCorrectedText(text, validatedCorrections);
-            console.log('Generated corrected text:', fullyCorrected);
-            
-            setCorrectedText(fullyCorrected);
+            // Use the fully corrected text from the API response
+            setCorrectedText(response.corrected);
             
             // Show the correct tab
             setShowCorrectTab(true);
@@ -144,13 +131,14 @@ export const useGrammarCheck = ({
             
             toast({
               title: "Text analyzed",
-              description: `Found ${validatedCorrections.length} potential improvements`,
+              description: `Found ${typedCorrections.length} potential improvements`,
             });
           } else {
-            console.error('No corrections array in response', parsedData);
+            console.error('Invalid response format', parsedData);
             toast({
-              title: "No issues found",
-              description: "Your text looks good! No corrections needed.",
+              title: "Invalid response",
+              description: "The grammar service returned an invalid response format.",
+              variant: "destructive"
             });
           }
         } catch (jsonError) {
