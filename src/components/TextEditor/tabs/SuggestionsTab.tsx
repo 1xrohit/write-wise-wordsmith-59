@@ -26,8 +26,8 @@ const SuggestionsTab: React.FC<SuggestionsTabProps> = ({ corrections }) => {
         <Card key={index} className="transition-all">
           <CardHeader className="p-3 pb-0">
             <div className="flex justify-between items-center">
-              <Badge className={getTypeBadgeColor(correction.type)}>
-                {correction.type.charAt(0).toUpperCase() + correction.type.slice(1)}
+              <Badge className={getTypeBadgeColor(correction.type || 'grammar')}>
+                {(correction.type || 'grammar').charAt(0).toUpperCase() + (correction.type || 'grammar').slice(1)}
               </Badge>
               
               <div className="flex space-x-1">
@@ -45,12 +45,12 @@ const SuggestionsTab: React.FC<SuggestionsTabProps> = ({ corrections }) => {
           
           <CardContent className="p-3">
             <div>
-              <div className="line-through text-muted-foreground text-sm">{correction.original}</div>
+              <div className="line-through text-muted-foreground text-sm">{correction.error}</div>
               <div className="font-medium text-sm">{correction.suggestion}</div>
             </div>
             
             <CardDescription className="mt-2 text-sm">
-              {correction.explanation}
+              {correction.reason}
             </CardDescription>
           </CardContent>
         </Card>
